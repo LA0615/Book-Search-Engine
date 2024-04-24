@@ -7,16 +7,21 @@ const resolvers = {
     book: async () => {
       return Book.find({});
     },
+    users: async () => {
+return User.find({});
+    },
     user: async (parent, { _id }) => {
       const params = _id ? { _id } : {};
       return User.find(params);
     },
+  
   },
   Mutation: {
     addUser: async (parent, args) => {
       const user = await User.create(args);
       const token = signToken(user);
-      return { token, user };    },
+      return { token, user };
+    },
     login: async (parent, { email, password }) => {
       const user = await User.findOne({ email });
       if (!user) {
@@ -33,7 +38,7 @@ const resolvers = {
       if (context.user) {
         const updatedUser = await User.findOneAndUpdate(
           { _id: context.user._id },
-          { $addToSet: { savedBooks: bookData } },
+          { $push: { savedBooks: bookData } },
           { new: true }
         );
         return updatedUser;
@@ -43,7 +48,7 @@ const resolvers = {
       if (context.user) {
         const updatedUser = await User.findOneAndUpdate(
           { _id: context.user._id },
-          { $pull: { savedBooks: { bookId } } },
+          { savedBooks: { bookId: bookId } }, // Add a comma here
           { new: true }
         );
         return updatedUser;
@@ -51,4 +56,5 @@ const resolvers = {
     },
   },
 };
+
 module.exports = resolvers;

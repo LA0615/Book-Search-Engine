@@ -20,19 +20,23 @@ const server = new ApolloServer({
 const startApolloServer = async () => {
   await server.start();
 
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-app.use('/graphql', expressMiddleware(server, {
-  context: authMiddleware
-}));
+
 
 // if we're in production, serve client/build as static assets
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-  });
+// Serve static assets from the 'dist' folder inside the 'client' directory
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// For all other routes, serve the 'index.html' file from the 'dist' folder
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
 }
+app.use('/graphql', expressMiddleware(server, {
+  context: authMiddleware
+}));
 
 app.use(routes);
 
