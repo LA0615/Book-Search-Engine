@@ -30,7 +30,7 @@ export const loginUser = (userData) => {
 
 // save book data for a logged in user
 export const saveBook = (bookData, token) => {
-  return fetch('/api/users', {
+  return fetch('/api/users/books', {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -45,6 +45,7 @@ export const deleteBook = (bookId, token) => {
   return fetch(`/api/users/books/${bookId}`, {
     method: 'DELETE',
     headers: {
+      'Content-Type': 'application/json',
       authorization: `Bearer ${token}`,
     },
   });

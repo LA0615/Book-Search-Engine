@@ -17,9 +17,7 @@ type Book {
 }
 type Query {
     me: User
-    book: [Book]
-    users: [User]
-    user(_id: ID!): User
+  
 }
 type Auth {
     token: ID

@@ -21,9 +21,9 @@ module.exports = {
     if (req.headers.authorization) {
       token = token.split(' ').pop().trim();
     }
-
+console.log('\n \n token',token);
     if (!token) {
-      return { message: 'You have no token!' };
+      return req;
     }
 
     // verify token and get user data out of it

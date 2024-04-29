@@ -1,86 +1,77 @@
-import { useState, useEffect } from 'react';
-import {
-  Container,
-  Col,
-  Form,
-  Button,
-  Card,
-  Row
-} from 'react-bootstrap';
 
+import  { useState, useEffect } from 'react';
+import { Container, Col, Form, Button, Card, Row } from 'react-bootstrap';
 import Auth from '../utils/auth';
-import { saveBook, searchGoogleBooks } from '../utils/API';
-import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
+import { searchGoogleBooks } from '../utils/API';
+import { getSavedBookIds} from '../utils/localStorage';
 import { useMutation } from '@apollo/client';
 import { SAVE_BOOK } from '../utils/mutations';
 
 const SearchBooks = () => {
-  // create state for holding returned google api data
+  // State variables
   const [searchedBooks, setSearchedBooks] = useState([]);
-  // create state for holding our search field data
   const [searchInput, setSearchInput] = useState('');
-
-  // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
-  const [saveBook, { data, loading, error }] = useMutation(SAVE_BOOK);
+  const [saveBook] = useMutation(SAVE_BOOK);
 
-  // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
-  // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
+  // useEffect hook to save `savedBookIds` list to localStorage on component unmount
   useEffect(() => {
-    // Save `savedBookIds` list to localStorage whenever it changes
     localStorage.setItem('savedBookIds', JSON.stringify(savedBookIds));
-  }, [savedBookIds]); 
+  }, [savedBookIds]);
 
-  // create method to search for books and set state on form submit
+  // Method to search for books and set state on form submit
   const handleFormSubmit = async (event) => {
     event.preventDefault();
-
     if (!searchInput) {
-      return false;
+      return;
     }
 
     try {
       const response = await searchGoogleBooks(searchInput);
-      const data = await response.json(); // Parse the response body as JSON
-  
-      const bookData = data.items.map((book) => ({
-        bookId: book.id,
-        authors: book.volumeInfo.authors || ['No author to display'],
-        title: book.volumeInfo.title,
-        description: book.volumeInfo.description,
-        image: book.volumeInfo.imageLinks?.thumbnail || '',
-        link: book.volumeInfo.previewLink,
-      }));
-  
+      const { items } = await response.json();
+
+      const bookData = items.map((book) => {
+        const volumeInfo = book.volumeInfo;
+        return {
+          bookId: book.id,
+          authors: volumeInfo.authors || ['No author to display'],
+          title: volumeInfo.title,
+          description: volumeInfo.description,
+          image: volumeInfo.imageLinks?.thumbnail || '',
+          link: volumeInfo.previewLink,
+        };
+      });
+
       setSearchedBooks(bookData);
       setSearchInput('');
     } catch (err) {
       console.error(err);
     }
   };
-  // create function to handle saving a book to our database
-  const handleSaveBook = async (bookId) => {
-    // find the book in `searchedBooks` state by the matching id
-    const bookToSave = searchedBooks.find((book) => book.bookId === bookId);
-console.log(bookToSave);
-    // get token
-    const token = Auth.loggedIn() ? Auth.getToken() : null;
-
-    if (!token) {
-      return false;
-    }
-
-    try {
-      await saveBook({
-        variables: {
-          bookData: bookToSave,
-        },
+   const handleSaveBook = async (bookId) => {
+    const book = searchedBooks.find((book) => book.bookId === bookId);
+    const image = book.image || '';
+    const bookData = {
+          authors: book.authors,
+          description: book.description,
+          title: book.title,
+          bookId: book.bookId,
+          image: image,
+          link: book.link,
+        };
+        const token = Auth.loggedIn() ? Auth.getToken() : null ;
+        if  (!token) {
+          return false;
+        }
+        try {
+      const { data } = await saveBook({
+        variables: { bookData: {...bookData} },
       });
-
-      // if book successfully saves to user's account, save book id to state
-      setSavedBookIds([...savedBookIds, bookToSave.bookId]);
-    } catch (err) {
-      console.error(err);
+      // Handle the response from the saveBook mutation
+      setSavedBookIds([...savedBookIds, bookId]);
+      // Update the UI based on the saved status of the book
+    } catch (error) {
+      console.error(error);
     }
   };
 
